@@ -14,10 +14,6 @@ function generateRandomString() {
   return Math.random().toString(36).slice(2, 8);
 }
 
-app.get("/", (req, res) => {
-  res.send("Hello!");
-});
-
 //route handler for /urls and res.render() to pass the url data into out tempkate
 app.get("/urls", (req, res) => {
   const templateVars = { urls: urlDatabase };
@@ -28,7 +24,13 @@ app.get("/urls/new", (req, res) => {
 });
 app.post("/urls", (req, res) => {
   console.log(req.body);
-  res.send("Ok");
+  const shortURL = generateRandomString();
+  urlDatabase[shortURL] = req.body.longURL;
+  res.redirect(`/urls/${shortURL}`);
+});
+app.get("/u/:id", (req, res) => {
+  const longURL = urlDatabase[req.params.id];
+  res.redirect(longURL);
 });
 
 app.get("/urls/:id", (req, res) => {
@@ -40,9 +42,6 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
-app.get("/hello", (req, res) => {
-  res.send("<html><body>Hello <b>World</b></body></html>\n");
-});
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
