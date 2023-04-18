@@ -13,6 +13,12 @@ app.get("/", (req, res) => {
   res.send("Hello!");
 });
 
+//route handler for /urls and res.render() to pass the url data into out tempkate
+app.get("/urls", (req, res) => {
+  const templateVars = { urls: urlDatabase };
+  res.render("urls_index", templateVars);
+});
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
