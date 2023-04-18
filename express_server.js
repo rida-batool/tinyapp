@@ -38,6 +38,13 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+//endpoint triggered when user hits delete button
+app.post("/urls/:id/delete", (req, res) => {
+  console.log(req.params.id);
+  delete urlDatabase[req.params.id];
+  res.redirect(`/urls`);
+});
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
