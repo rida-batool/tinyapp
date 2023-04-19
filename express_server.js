@@ -35,6 +35,10 @@ app.get("/urls/new", (req, res) => {
   };
   res.render("urls_new", templateVars);
 });
+//GET route for /register which renders the registration template
+app.get("/register", (req, res) => {
+  res.render("register");
+});
 //endpoint to post the new url to /urls
 app.post("/urls", (req, res) => {
   console.log(req.body);
