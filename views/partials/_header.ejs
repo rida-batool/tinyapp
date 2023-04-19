@@ -14,15 +14,21 @@
             <li>
               Logged in as: <%= user.email %>
             </li>
+
             <form class="form-inline" method="POST" action="/logout">
               <button type="submit" class="btn btn-primary">Logout</button>
             </form>
+
             <% } else { %>
-              <form class="form-inline" method="post" action="/login">
-                <input class="form-control" type="text" name="username" placeholder="Username"
-                  style="width: 300px; margin: 0.5em">
+
+              <a href="/register">
+                <button type="submit" class="btn btn-primary">Register</button>
+              </a>
+
+              <a href="/login">
                 <button type="submit" class="btn btn-primary">Login</button>
-              </form>
+              </a>
+
               <% } %>
         </ul>
 

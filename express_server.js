@@ -22,6 +22,16 @@ function generateRandomString() {
   return Math.random().toString(36).slice(2, 8);
 }
 
+const findUserByEmail = (email, users) => {
+  for (let user in users) {
+    if (users[user].email === email) {
+      return users[user];
+    }
+  }
+  return false;
+};
+
+
 //route handler for /urls and res.render() to pass the url data into out template
 app.get("/urls", (req, res) => {
   const user = req.cookies["user_id"];
@@ -75,12 +85,12 @@ app.post("/register", (req, res) => {
   // Check if user exists? => look for that email
   for (let userId in users) {
     if (req.body.email === "" || req.body.password === "") {
-      res.status(403).send('Please provide complete information');
+      res.status(400).send("Email or password cannot be empty");
       return;
     }
     else if (users[userId].email === email) {
       // user exist
-      res.status(403).send('User already exist');
+      res.status(400).send('User already exists!');
       return;
     }
   }
@@ -99,6 +109,12 @@ app.post("/register", (req, res) => {
   res.redirect("/urls");
 });
 
+// LOGIN
+
+app.get("/login", (req, res) => {
+  const templateVars = { user: null };
+  res.render("login", templateVars);
+});
 
 //get request to go to main website page saved in shortURL
 app.get("/u/:id", (req, res) => {
