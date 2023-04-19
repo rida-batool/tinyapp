@@ -116,6 +116,28 @@ app.get("/login", (req, res) => {
   res.render("login", templateVars);
 });
 
+//endpoint triggered when user login
+app.post("/login", (req, res) => {
+  console.log(req.body);
+  //extract email and password
+  const { email, password } = req.body;
+  //validate if user exists
+  const user = findUserByEmail(email, users);
+  if (user && user.email === email) {
+    if (user.password === password) {
+      //setting the cookie 
+      res.cookie("user_id", user.id);
+      res.redirect("/urls");
+    } else {
+      res.status(403).send('Bad credentials');
+    }
+
+  } else {
+    res.status(403).send('Email not found');
+  }
+
+});
+
 //get request to go to main website page saved in shortURL
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
@@ -145,12 +167,6 @@ app.post("/urls/:id/updated", (req, res) => {
   res.redirect(`/urls`);
 });
 
-//endpoint triggered when user login
-app.post("/login", (req, res) => {
-  console.log(req.body.username);
-  res.cookie('username', req.body.username);
-  res.redirect(`/urls`);
-});
 //logout endpoint triggered when user logout and cookie is cleared, user redirected to /urls
 app.post("/logout", (req, res) => {
   res.clearCookie('username');
