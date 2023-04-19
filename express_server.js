@@ -52,6 +52,13 @@ app.post("/urls/:id/updated", (req, res) => {
   res.redirect(`/urls`);
 });
 
+//endpoint triggered when user login
+app.post("/login", (req, res) => {
+  console.log(req.body.username);
+  res.cookie('username', req.body.username);
+  res.redirect(`/urls`);
+});
+
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
