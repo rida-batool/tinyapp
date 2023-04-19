@@ -15,6 +15,8 @@ const urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = {};
+
 //generates 6 alpha-numeric string
 function generateRandomString() {
   return Math.random().toString(36).slice(2, 8);
@@ -22,23 +24,22 @@ function generateRandomString() {
 
 //route handler for /urls and res.render() to pass the url data into out template
 app.get("/urls", (req, res) => {
+  const user = req.cookies["user_id"];
   const templateVars = {
-    username: req.cookies["username"],
+    user: users[user],
     urls: urlDatabase
   };
   res.render("urls_index", templateVars);
 });
 //endpoint to go to page and add a new url to database
 app.get("/urls/new", (req, res) => {
+  const user = req.cookies["user_id"];
   const templateVars = {
-    username: req.cookies["username"]
+    user: users[user],
   };
   res.render("urls_new", templateVars);
 });
-//GET route for /register which renders the registration template
-app.get("/register", (req, res) => {
-  res.render("register");
-});
+
 //endpoint to post the new url to /urls
 app.post("/urls", (req, res) => {
   console.log(req.body);
@@ -46,6 +47,59 @@ app.post("/urls", (req, res) => {
   urlDatabase[shortURL] = req.body.longURL;
   res.redirect(`/urls/${shortURL}`);
 });
+
+// Authentication Routes (End-Points)
+
+// REGISTER
+
+// get register
+
+//GET route for /register which renders the registration template
+app.get("/register", (req, res) => {
+  res.render("register");
+});
+
+//POST Register
+
+//POST /register endpoint, saves the user data into users object
+app.post("/register", (req, res) => {
+  console.log(req.body);
+  //destructuring
+  const { email, password } = req.body;
+
+  // const name = req.body.name;
+  // const email = req.body.email;
+  // const password = req.body.password;
+
+  // validation
+  // Check if user exists? => look for that email
+  for (let userId in users) {
+    if (req.body.email === "" || req.body.password === "") {
+      res.status(403).send('Please provide complete information');
+      return;
+    }
+    else if (users[userId].email === email) {
+      // user exist
+      res.status(403).send('User already exist');
+      return;
+    }
+  }
+  // adding the user to the users DB
+  const userRandomID = generateRandomString();
+  users[userRandomID] = {
+    id: userRandomID,
+    email,
+    password
+  };
+  //set the cookie
+  res.cookie('user_id', userRandomID);
+  //check the users object
+  console.log(users);
+  //redirect to /urls page
+  res.redirect("/urls");
+});
+
+
 //get request to go to main website page saved in shortURL
 app.get("/u/:id", (req, res) => {
   const longURL = urlDatabase[req.params.id];
@@ -53,8 +107,9 @@ app.get("/u/:id", (req, res) => {
 });
 //endpoint to go to shortURL page
 app.get("/urls/:id", (req, res) => {
+  const user = req.cookies["user_id"];
   const templateVars = {
-    username: req.cookies["username"],
+    user: users[user],
     id: req.params.id, longURL: urlDatabase[req.params.id]
   };
   res.render("urls_show", templateVars);
@@ -80,7 +135,7 @@ app.post("/login", (req, res) => {
   res.cookie('username', req.body.username);
   res.redirect(`/urls`);
 });
-//logout endppoint triggered when user logout and cookie is cleared, user redirected to /urls
+//logout endpoint triggered when user logout and cookie is cleared, user redirected to /urls
 app.post("/logout", (req, res) => {
   res.clearCookie('username');
   res.redirect(`/urls`);
