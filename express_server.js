@@ -41,8 +41,12 @@ app.get("/urls", (req, res) => {
   };
   res.render("urls_index", templateVars);
 });
+
 //endpoint to go to page and add a new url to database
 app.get("/urls/new", (req, res) => {
+  if (!req.cookies["user_id"]) {
+    res.redirect("/login");
+  }
   const user = req.cookies["user_id"];
   const templateVars = {
     user: users[user],
@@ -53,9 +57,14 @@ app.get("/urls/new", (req, res) => {
 //endpoint to post the new url to /urls
 app.post("/urls", (req, res) => {
   console.log(req.body);
-  const shortURL = generateRandomString();
-  urlDatabase[shortURL] = req.body.longURL;
-  res.redirect(`/urls/${shortURL}`);
+  if (!req.cookies["user_id"]) {
+    res.status(401).send('You must be logged in to shorten URLs');
+    return;
+  } else {
+    const shortURL = generateRandomString();
+    urlDatabase[shortURL] = req.body.longURL;
+    res.redirect(`/urls/${shortURL}`);
+  }
 });
 
 // Authentication Routes (End-Points)
@@ -66,6 +75,9 @@ app.post("/urls", (req, res) => {
 
 //GET route for /register which renders the registration template
 app.get("/register", (req, res) => {
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+  }
   res.render("register");
 });
 
@@ -112,6 +124,9 @@ app.post("/register", (req, res) => {
 // LOGIN
 
 app.get("/login", (req, res) => {
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+  }
   const templateVars = { user: null };
   res.render("login", templateVars);
 });
@@ -140,6 +155,10 @@ app.post("/login", (req, res) => {
 
 //get request to go to main website page saved in shortURL
 app.get("/u/:id", (req, res) => {
+  if (!urlDatabase[req.params.id]) {
+    res.status(401).send('ShortURL does not exist!');
+    return;
+  }
   const longURL = urlDatabase[req.params.id];
   res.redirect(longURL);
 });
