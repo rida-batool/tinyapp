@@ -170,7 +170,7 @@ app.post("/urls/:id/updated", (req, res) => {
 //logout endpoint triggered when user logout and cookie is cleared, user redirected to /urls
 app.post("/logout", (req, res) => {
   res.clearCookie('user_id');
-  res.redirect(`/urls`);
+  res.redirect(`/login`);
 });
 
 app.get("/urls.json", (req, res) => {
