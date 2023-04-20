@@ -10,12 +10,46 @@ app.use(express.urlencoded({ extended: true }));
 //parses the cookie information stored in user's browser to pass with the get/post request
 app.use(cookieParser());
 
+// const urlDatabase = {
+//   "b2xVn2": "http://www.lighthouselabs.ca",
+//   "9sm5xK": "http://www.google.com"
+// };
+
 const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  b6UTxQ: {
+    longURL: "https://www.tsn.ca",
+    userID: "aJ48lW",
+  },
+  i3BoGr: {
+    longURL: "https://www.google.ca",
+    userID: "aJ48lW",
+  },
+  b5ae9v: {
+    longURL: "https://www.sephora.com",
+    userID: "ima6gv",
+  },
+  ku4mnm: {
+    longURL: "http://www.bing.com",
+    userID: "ima6gv",
+  },
+  scvyr4: {
+    longURL: "https://www.apple.ca",
+    userID: "ima6gv",
+  }
 };
 
-const users = {};
+const users = {
+  userRandomID: {
+    id: "userRandomID",
+    email: "user@example.com",
+    password: "purple-monkey-dinosaur",
+  },
+  ima6gv: {
+    id: "ima6gv",
+    email: "user2@example.com",
+    password: "123",
+  },
+};
 
 //generates 6 alpha-numeric string
 function generateRandomString() {
@@ -31,38 +65,64 @@ const findUserByEmail = (email, users) => {
   return false;
 };
 
+//function to return URLs which have userID === user_id(cookie)
+const urlsForUser = (id) => {
+  let urls = [];
+  for (let key in urlDatabase) {
+    //console.log('database key', urlDatabase[key], urlDatabase[key].userID === id);
+    if (urlDatabase[key].userID === id) {
+      urls.push(urlDatabase[key].longURL);
+    }
+  }
+  return urls;
+};
+
+const objectsForUser = (id) => {
+  let userDatabase = {};
+  for (let key in urlDatabase) {
+    if (urlDatabase[key].userID === id) {
+      userDatabase[key] = urlDatabase[key];
+      console.log(userDatabase);
+    }
+  }
+  return userDatabase;
+};
 
 //route handler for /urls and res.render() to pass the url data into out template
 app.get("/urls", (req, res) => {
-  const user = req.cookies["user_id"];
+  const user = users[req.cookies.user_id];
+  const myDatabase = objectsForUser(user.id);
+  //const user = req.cookies["user_id"];
+  if (!user) {
+    res.status(401).send('Login to view your URLs');
+  }
   const templateVars = {
-    user: users[user],
-    urls: urlDatabase
+    user,
+    urls: myDatabase
   };
   res.render("urls_index", templateVars);
 });
 
 //endpoint to go to page and add a new url to database
 app.get("/urls/new", (req, res) => {
-  if (!req.cookies["user_id"]) {
+  const user = users[req.cookies.user_id];
+  if (!user) {
     res.redirect("/login");
   }
-  const user = req.cookies["user_id"];
-  const templateVars = {
-    user: users[user],
-  };
+  const templateVars = { user };
   res.render("urls_new", templateVars);
 });
 
 //endpoint to post the new url to /urls
 app.post("/urls", (req, res) => {
   console.log(req.body);
-  if (!req.cookies["user_id"]) {
+  const user = users[req.cookies.user_id];
+  if (!user) {
     res.status(401).send('You must be logged in to shorten URLs');
     return;
   } else {
     const shortURL = generateRandomString();
-    urlDatabase[shortURL] = req.body.longURL;
+    urlDatabase[shortURL] = { longURL: req.body.longURL };
     res.redirect(`/urls/${shortURL}`);
   }
 });
@@ -75,10 +135,13 @@ app.post("/urls", (req, res) => {
 
 //GET route for /register which renders the registration template
 app.get("/register", (req, res) => {
-  if (req.cookies["user_id"]) {
+  //redirect the user to /urls page if user already logged in
+  const user = users[req.cookies.user_id];
+  if (user) {
     res.redirect("/urls");
   }
-  res.render("register");
+  const templateVars = { user: null };
+  res.render("register", templateVars);
 });
 
 //POST Register
@@ -124,7 +187,8 @@ app.post("/register", (req, res) => {
 // LOGIN
 
 app.get("/login", (req, res) => {
-  if (req.cookies["user_id"]) {
+  const user = users[req.cookies.user_id];
+  if (user) {
     res.redirect("/urls");
   }
   const templateVars = { user: null };
@@ -146,7 +210,6 @@ app.post("/login", (req, res) => {
     } else {
       res.status(403).send('Bad credentials');
     }
-
   } else {
     res.status(403).send('Email not found');
   }
@@ -159,31 +222,89 @@ app.get("/u/:id", (req, res) => {
     res.status(401).send('ShortURL does not exist!');
     return;
   }
-  const longURL = urlDatabase[req.params.id];
+  const longURL = urlDatabase[req.params.id].longURL;
   res.redirect(longURL);
 });
+
 //endpoint to go to shortURL page
 app.get("/urls/:id", (req, res) => {
-  const user = req.cookies["user_id"];
+  if (!urlDatabase[req.params.id]) {
+    res.status(401).send('ShortURL does not exist!');
+    return;
+  }
+  const user = req.cookies.user_id;
+  const myURLs = urlsForUser(user);
+  console.log("myURLs:", myURLs);
+
   const templateVars = {
     user: users[user],
-    id: req.params.id, longURL: urlDatabase[req.params.id]
+    id: req.params.id,
+    longURL: urlDatabase[req.params.id].longURL
   };
-  res.render("urls_show", templateVars);
+
+  //console.log("urls includes", myURLs.includes(templateVars.longURL));
+
+  if (!user) {
+    res.status(401).send('Login to view your URLs');
+    return;
+  } else if (!myURLs.includes(templateVars.longURL)) {
+    res.status(401).send('You do not own this URL');
+    return;
+  } else {
+    res.render("urls_show", templateVars);
+  }
 });
 
 //endpoint triggered when user hits delete button
 app.post("/urls/:id/delete", (req, res) => {
-  console.log(req.params.id);
-  delete urlDatabase[req.params.id];
-  res.redirect(`/urls`);
+  if (!urlDatabase[req.params.id]) {
+    res.status(401).send('ShortURL does not exist!');
+    return;
+  }
+  //console.log(req.params.id);
+  const user = users[req.cookies.user_id];
+  const myURLs = urlsForUser(user.id);
+
+  const templateVars = {
+    longURL: urlDatabase[req.params.id].longURL
+  };
+
+  if (!user) {
+    res.status(401).send('Login to view your URLs');
+    return;
+  } else if (!myURLs.includes(templateVars.longURL)) {
+    res.status(401).send('You do not own this URL');
+    return;
+  } else {
+    delete urlDatabase[req.params.id];
+    res.redirect(`/urls`);
+  }
 });
 
 //endpoint triggered when user edits a longURL
 app.post("/urls/:id/updated", (req, res) => {
-  console.log(req.body);
-  urlDatabase[req.params.id] = req.body.longURL;
-  res.redirect(`/urls`);
+  if (!urlDatabase[req.params.id]) {
+    res.status(401).send('ShortURL does not exist!');
+    return;
+  }
+  //console.log(req.body);
+  const user = users[req.cookies.user_id]; //user is an object
+  const myURLs = urlsForUser(user.id);
+
+  const templateVars = {
+    longURL: urlDatabase[req.params.id].longURL
+  };
+
+  if (!user) {
+    res.status(401).send('Login to view your URLs');
+    return;
+  } else if (!myURLs.includes(templateVars.longURL)) {
+    res.status(401).send('You do not own this URL');
+    return;
+  } else {
+    urlDatabase[req.params.id]["longURL"] = req.body.longURL;
+    res.redirect(`/urls`);
+  }
 });
 
 //logout endpoint triggered when user logout and cookie is cleared, user redirected to /urls
