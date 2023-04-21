@@ -97,7 +97,7 @@ const objectsForUser = (id) => {
   return userDatabase;
 };
 
-//route handler for /urls and res.render() to pass the url data into out template
+//route handler for /urls and res.render() to pass the url data into our template
 app.get("/urls", (req, res) => {
   const user = users[req.session.user_id];
   if (!user) {
@@ -123,7 +123,7 @@ app.get("/urls/new", (req, res) => {
 
 //endpoint to post the new url to /urls
 app.post("/urls", (req, res) => {
-  console.log(req.body);
+
   const user = users[req.session.user_id];
   if (!user) {
     res.status(401).send('You must be logged in to shorten URLs');
@@ -159,11 +159,10 @@ app.get("/register", (req, res) => {
 
 //POST /register endpoint, saves the user data into users object
 app.post("/register", (req, res) => {
-  console.log(req.body);
+
   //destructuring
   //const { email, password } = req.body;
 
-  // const name = req.body.name;
   const email = req.body.email;
   const password = req.body.password;
   const salt = bcrypt.genSaltSync(10);
@@ -196,7 +195,6 @@ app.post("/register", (req, res) => {
   req.session.user_id = userRandomID;
   //check the users object
   console.log(users);
-  //redirect to /urls page
   res.redirect("/urls");
 });
 
@@ -221,7 +219,6 @@ app.post("/login", (req, res) => {
 
   //validate if user exists
   const user = findUserByEmail(email, users);
-  //console.log("user", user);
   if (user && user.email === email) {
     console.log("user password", user.password);
     if (bcrypt.compareSync(password, user.password)) {
@@ -264,7 +261,6 @@ app.get("/urls/:id", (req, res) => {
     longURL: urlDatabase[req.params.id].longURL
   };
 
-  //console.log("urls includes", myURLs.includes(templateVars.longURL));
 
   if (!user) {
     res.status(401).send('Login to view your URLs');
@@ -283,7 +279,6 @@ app.post("/urls/:id/delete", (req, res) => {
     res.status(401).send('ShortURL does not exist!');
     return;
   }
-  //console.log(req.params.id);
   const user = users[req.session.user_id];
   const myURLs = urlsForUser(user.id);
 
@@ -309,7 +304,7 @@ app.post("/urls/:id/updated", (req, res) => {
     res.status(401).send('ShortURL does not exist!');
     return;
   }
-  //console.log(req.body);
+
   const user = users[req.session.user_id]; //user is an object
   const myURLs = urlsForUser(user.id);
 
