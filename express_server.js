@@ -1,4 +1,5 @@
 const express = require("express");
+var cookieSession = require('cookie-session');
 var cookieParser = require('cookie-parser');
 var morgan = require('morgan');
 const bcrypt = require("bcryptjs");
@@ -11,14 +12,16 @@ app.set("view engine", "ejs");
 app.use(morgan('dev'));
 //this parses the req.body for html to read
 app.use(express.urlencoded({ extended: true }));
+//cookie session
+app.use(cookieSession({
+  name: 'session',
+  keys: ['test', '12345', 'app']
+}));
 //parses the cookie information stored in user's browser to pass with the get/post request
-app.use(cookieParser());
+//app.use(cookieParser());
 //--------> middleware----------//
 
-// const urlDatabase = {
-//   "b2xVn2": "http://www.lighthouselabs.ca",
-//   "9sm5xK": "http://www.google.com"
-// };
+
 
 const urlDatabase = {
   b6UTxQ: {
@@ -104,9 +107,9 @@ const objectsForUser = (id) => {
 
 //route handler for /urls and res.render() to pass the url data into out template
 app.get("/urls", (req, res) => {
-  const user = users[req.cookies.user_id];
+  const user = users[req.session.user_id];
   const myDatabase = objectsForUser(user.id);
-  //const user = req.cookies["user_id"];
+
   if (!user) {
     res.status(401).send('Login to view your URLs');
   }
@@ -119,7 +122,7 @@ app.get("/urls", (req, res) => {
 
 //endpoint to go to page and add a new url to database
 app.get("/urls/new", (req, res) => {
-  const user = users[req.cookies.user_id];
+  const user = users[req.session.user_id];
   if (!user) {
     res.redirect("/login");
   }
@@ -130,7 +133,7 @@ app.get("/urls/new", (req, res) => {
 //endpoint to post the new url to /urls
 app.post("/urls", (req, res) => {
   console.log(req.body);
-  const user = users[req.cookies.user_id];
+  const user = users[req.session.user_id];
   if (!user) {
     res.status(401).send('You must be logged in to shorten URLs');
     return;
@@ -153,7 +156,7 @@ app.post("/urls", (req, res) => {
 //GET route for /register which renders the registration template
 app.get("/register", (req, res) => {
   //redirect the user to /urls page if user already logged in
-  const user = users[req.cookies.user_id];
+  const user = users[req.session.user_id];
   if (user) {
     res.redirect("/urls");
   }
@@ -198,7 +201,8 @@ app.post("/register", (req, res) => {
   };
 
   //set the cookie
-  res.cookie('user_id', userRandomID);
+  //res.cookie('user_id', userRandomID);
+  req.session.user_id = userRandomID;
   //check the users object
   console.log(users);
   //redirect to /urls page
@@ -208,7 +212,7 @@ app.post("/register", (req, res) => {
 // LOGIN
 
 app.get("/login", (req, res) => {
-  const user = users[req.cookies.user_id];
+  const user = users[req.session.user_id];
   if (user) {
     res.redirect("/urls");
   }
@@ -231,7 +235,8 @@ app.post("/login", (req, res) => {
     console.log("user password", user.password);
     if (bcrypt.compareSync(password, user.password)) {
       //setting the cookie 
-      res.cookie("user_id", user.id);
+      //res.cookie("user_id", user.id);
+      req.session.user_id = user.id;
       res.redirect("/urls");
     } else {
       res.status(403).send('Bad credentials');
@@ -258,7 +263,7 @@ app.get("/urls/:id", (req, res) => {
     res.status(401).send('ShortURL does not exist!');
     return;
   }
-  const user = req.cookies.user_id;
+  const user = req.session.user_id;
   const myURLs = urlsForUser(user);
   console.log("myURLs:", myURLs);
 
@@ -288,7 +293,7 @@ app.post("/urls/:id/delete", (req, res) => {
     return;
   }
   //console.log(req.params.id);
-  const user = users[req.cookies.user_id];
+  const user = users[req.session.user_id];
   const myURLs = urlsForUser(user.id);
 
   const templateVars = {
@@ -314,7 +319,7 @@ app.post("/urls/:id/updated", (req, res) => {
     return;
   }
   //console.log(req.body);
-  const user = users[req.cookies.user_id]; //user is an object
+  const user = users[req.session.user_id]; //user is an object
   const myURLs = urlsForUser(user.id);
 
   const templateVars = {
@@ -335,7 +340,8 @@ app.post("/urls/:id/updated", (req, res) => {
 
 //logout endpoint triggered when user logout and cookie is cleared, user redirected to /urls
 app.post("/logout", (req, res) => {
-  res.clearCookie('user_id');
+  //res.clearCookie('user_id');
+  req.session = null;
   res.redirect(`/login`);
 });
 
