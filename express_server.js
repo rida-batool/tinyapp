@@ -1,7 +1,7 @@
 const express = require("express");
-var cookieSession = require('cookie-session');
-var cookieParser = require('cookie-parser');
-var morgan = require('morgan');
+let cookieSession = require('cookie-session');
+const { findUserByEmail } = require('./helpers.js');
+let morgan = require('morgan');
 const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; // default port 8080
@@ -63,7 +63,7 @@ const users = {
   },
   z8q89n: {
     id: "z8q89n",
-    email: "testing@gmail.com",
+    email: "testing3@gmail.com",
     password: "123",
   }
 };
@@ -73,14 +73,6 @@ function generateRandomString() {
   return Math.random().toString(36).slice(2, 8);
 }
 
-const findUserByEmail = (email, users) => {
-  for (let userid in users) {
-    if (users[userid].email === email) {
-      return users[userid];
-    }
-  }
-  return false;
-};
 
 //function to return URLs which have userID === user_id(cookie)
 const urlsForUser = (id) => {
@@ -108,11 +100,10 @@ const objectsForUser = (id) => {
 //route handler for /urls and res.render() to pass the url data into out template
 app.get("/urls", (req, res) => {
   const user = users[req.session.user_id];
-  const myDatabase = objectsForUser(user.id);
-
   if (!user) {
     res.status(401).send('Login to view your URLs');
   }
+  const myDatabase = objectsForUser(user.id);
   const templateVars = {
     user,
     urls: myDatabase
