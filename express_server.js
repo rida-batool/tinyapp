@@ -1,14 +1,19 @@
 const express = require("express");
 var cookieParser = require('cookie-parser');
+var morgan = require('morgan');
+const bcrypt = require("bcryptjs");
 const app = express();
 const PORT = 8080; // default port 8080
 
 //sets view engine ti ejs template
 app.set("view engine", "ejs");
+//---->Middleware------> route
+app.use(morgan('dev'));
 //this parses the req.body for html to read
 app.use(express.urlencoded({ extended: true }));
 //parses the cookie information stored in user's browser to pass with the get/post request
 app.use(cookieParser());
+//--------> middleware----------//
 
 // const urlDatabase = {
 //   "b2xVn2": "http://www.lighthouselabs.ca",
@@ -35,6 +40,10 @@ const urlDatabase = {
   scvyr4: {
     longURL: "https://www.apple.ca",
     userID: "ima6gv",
+  },
+  gq3zlk: {
+    longURL: "http://www.sephora.com",
+    userID: "z8q89n",
   }
 };
 
@@ -49,6 +58,11 @@ const users = {
     email: "user2@example.com",
     password: "123",
   },
+  z8q89n: {
+    id: "z8q89n",
+    email: "testing@gmail.com",
+    password: "123",
+  }
 };
 
 //generates 6 alpha-numeric string
@@ -57,9 +71,9 @@ function generateRandomString() {
 }
 
 const findUserByEmail = (email, users) => {
-  for (let user in users) {
-    if (users[user].email === email) {
-      return users[user];
+  for (let userid in users) {
+    if (users[userid].email === email) {
+      return users[userid];
     }
   }
   return false;
@@ -122,7 +136,10 @@ app.post("/urls", (req, res) => {
     return;
   } else {
     const shortURL = generateRandomString();
-    urlDatabase[shortURL] = { longURL: req.body.longURL };
+    urlDatabase[shortURL] = {
+      longURL: req.body.longURL,
+      userID: user.id
+    };
     res.redirect(`/urls/${shortURL}`);
   }
 });
@@ -150,11 +167,14 @@ app.get("/register", (req, res) => {
 app.post("/register", (req, res) => {
   console.log(req.body);
   //destructuring
-  const { email, password } = req.body;
+  //const { email, password } = req.body;
 
   // const name = req.body.name;
-  // const email = req.body.email;
-  // const password = req.body.password;
+  const email = req.body.email;
+  const password = req.body.password;
+  const salt = bcrypt.genSaltSync(10);
+  const hash = bcrypt.hashSync(password, salt);
+  console.log("hash:", hash);
 
   // validation
   // Check if user exists? => look for that email
@@ -174,8 +194,9 @@ app.post("/register", (req, res) => {
   users[userRandomID] = {
     id: userRandomID,
     email,
-    password
+    password: hash
   };
+
   //set the cookie
   res.cookie('user_id', userRandomID);
   //check the users object
@@ -199,11 +220,16 @@ app.get("/login", (req, res) => {
 app.post("/login", (req, res) => {
   console.log(req.body);
   //extract email and password
-  const { email, password } = req.body;
+  //const { email, password } = req.body;
+  const email = req.body.email;
+  const password = req.body.password;
+
   //validate if user exists
   const user = findUserByEmail(email, users);
+  //console.log("user", user);
   if (user && user.email === email) {
-    if (user.password === password) {
+    console.log("user password", user.password);
+    if (bcrypt.compareSync(password, user.password)) {
       //setting the cookie 
       res.cookie("user_id", user.id);
       res.redirect("/urls");
@@ -211,7 +237,7 @@ app.post("/login", (req, res) => {
       res.status(403).send('Bad credentials');
     }
   } else {
-    res.status(403).send('Email not found');
+    res.status(403).send('Email and password not found');
   }
 
 });
